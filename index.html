@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2F6F4F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="売上">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>📱 売上</title>
+<!--
+  📱 売上（sales_view）— パソコンの sales_manager の台帳の数字を、暗号のまま受け取って iPhone の中だけで解いて見せる。
+  見本＝C:\Claude_code\trade\plans\sales_view_mock_v2.html
+  🔴 外から何も読み込まない（電波の無い店でも開く）。鍵は # の後ろで受け取り、すぐ住所から消す。
+  🔴 鍵は「取り出せない形」でブラウザに預ける＝鍵そのものは持ち出せない（同じ住所の計算機・出勤簿のページに
+     問題が入れば、預けた鍵を使って解くことはできる＝自分のページだけを同じ住所に置く）。
+  🔴 iPhone の「ホーム画面に追加したアプリ」は Safari と保存場所が別＝カメラで QR を読む（Safari で開く）だけでは
+     アプリに鍵が入らない → Safari で「鍵をコピー」→ アプリで「鍵を貼る」で渡す（二人目の目 2026-11-22）。
+-->
+<style>
+:root{--bg:#F7F6F2;--bg2:#F1EFE8;--card:#FFFFFF;--ink:#2C2C2A;--ink2:#5F5E5A;--muted:#888780;
+ --line:#E4E1D8;--acc:#2F6F4F;--acc-soft:#E3EFE7;--ng:#C0392B;--ng-soft:#FBE7E4;--warn:#C97A19;--warn-soft:#FBEEDC;--yr:#6B4FA0}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink)}
+body{font-family:-apple-system,"Hiragino Sans","Yu Gothic UI",sans-serif;font-size:14px;line-height:1.45;
+ padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 14px) calc(env(safe-area-inset-bottom) + 24px) calc(env(safe-area-inset-left) + 14px)}
+button{font:inherit;color:inherit}
+.top{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.top .ttl{font-weight:700;font-size:17px;flex:1}
+.ib{border:1px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-size:15px;text-decoration:none;color:var(--ink);min-width:40px;text-align:center}
+.fresh{border-radius:10px;padding:7px 10px;font-size:13px;margin-bottom:8px;background:var(--acc-soft);color:#1f4f37}
+.fresh.old{background:var(--warn-soft);color:#7a4a0f}.fresh.ng{background:var(--ng-soft);color:#8a2318}
+.months{display:flex;gap:6px;margin:0 0 10px;overflow-x:auto;white-space:nowrap;padding-bottom:2px;touch-action:pan-x}
+.months button{padding:5px 12px;border-radius:999px;background:var(--bg2);border:0;font-size:13px;flex:none}
+.months button.on{background:var(--acc);color:#fff}
+.grp{font-size:12px;color:var(--ink2);font-weight:700;margin:14px 0 6px;border-bottom:1px solid var(--line);padding-bottom:2px;display:flex;justify-content:space-between}
+.grp span:last-child{font-weight:400;color:var(--muted)}
+.now{display:inline-block;background:var(--ink);color:#fff;border-radius:6px;padding:0 6px;font-size:10.5px;font-weight:700;margin-left:4px;vertical-align:1px}
+.yr{display:inline-block;background:var(--yr);color:#fff;border-radius:6px;padding:0 6px;font-size:10.5px;font-weight:700;margin-left:4px}
+.hero{background:linear-gradient(135deg,#2F6F4F,#4b8f6c);color:#fff;border-radius:18px;padding:14px 16px;margin-bottom:10px}
+.hero.loss{background:linear-gradient(135deg,#8a2a20,#b5483a)}
+.hero .lab{font-size:12px;opacity:.92}.hero .big{font-size:34px;font-weight:800;line-height:1.15}
+.hero .big2{font-size:22px;font-weight:800;margin-top:2px}.hero .big2 small{font-size:12px;font-weight:400;opacity:.9;margin-left:6px}
+.hero .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.hero .pills span{background:rgba(255,255,255,.18);border-radius:999px;padding:2px 9px;font-size:12px}
+.hero .cmp{font-size:12px;margin-top:6px;opacity:.95}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px}
+.card h4{margin:0 0 6px;font-size:13px;color:var(--ink2);font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.biz{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:8px 10px;font-size:12px}
+.biz .tag{display:inline-block;background:var(--acc-soft);color:var(--acc);border-radius:999px;padding:0 8px;font-size:11px;margin-bottom:4px}
+.kv{display:flex;justify-content:space-between;gap:6px}.kv b{font-weight:700}
+.gain{color:var(--acc)}.loss{color:var(--ng)}.muted{color:var(--muted)}.small{font-size:11.5px}
+.fold{font-size:12px;color:var(--muted);margin:0 0 4px;background:none;border:0;padding:2px 0}
+.bars{display:flex;align-items:flex-end;gap:2px;height:96px;margin:6px 0 2px}
+.bars button{flex:1;height:100%;display:flex;align-items:flex-end;position:relative;background:none;border:0;padding:0}
+.bars em{display:block;width:100%;background:#cfe3d6;border-radius:3px 3px 0 0}
+.bars button.on em{background:var(--acc)}
+.bars b{position:absolute;left:50%;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:#1f4f37;border:1px solid #fff}
+.bars b.neg{background:var(--ng)}
+.mlab{display:flex;gap:2px;font-size:11px;color:var(--ink2)}.mlab span{flex:1;text-align:center}
+.tip{font-size:12px;background:var(--ink);color:#fff;border-radius:8px;padding:4px 8px;display:inline-block;margin-bottom:4px}
+.sel2{display:flex;gap:6px;margin:4px 0 8px}
+.sel2 select{flex:1;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:16px;background:#fff;color:var(--ink)}
+.day{font-size:12.5px;font-weight:700;display:flex;justify-content:space-between;padding:7px 0;border-top:1px solid var(--bg2);background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left}
+.row{display:flex;gap:8px;align-items:center;border-top:1px dashed var(--bg2);padding:6px 0;font-size:12px;color:var(--ink);text-decoration:none}
+.row .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .ch{font-size:10px;color:var(--ink2);background:var(--bg2);border-radius:6px;padding:0 5px;flex:none}
+.row .a{text-align:right;width:78px;flex:none}.row .a small{display:block}
+.row.ret .t{color:var(--ng)}.lnk{color:var(--acc);text-decoration:underline}
+.more{display:block;width:100%;text-align:center;font-size:13px;color:var(--acc);padding:8px 0;border:1px solid var(--line);border-radius:10px;margin-top:6px;background:#fff}
+.about{display:block;width:100%;text-align:center;font-size:13px;color:var(--ink2);margin-top:12px;background:none;border:0}
+.aboutbox{font-size:13px;color:var(--ink2)}.aboutbox p{margin:6px 0}
+.empty{text-align:center;color:var(--ink2);padding:40px 10px}.empty ol{text-align:left;display:inline-block}
+.dim{opacity:.55}
+</style>
+</head>
+<body>
+<div id="app"><div class="empty">読み込み中…</div></div>
+<script>
+// ===LOGIC-START===
+var PAGE_V = 1;           // このページが読めるデータの形の版（payload.FORMAT_VERSION と同じ）
+var MAGIC = "SV1", KEY_ID_LEN = 8, NONCE_LEN = 12, HEADER_LEN = 11;
+var BIZ_ICON = {"せどり": "📦", "AIポスター": "🎨", "オリキャラ": "🧸", "AI同人": "📖"};
+var BIZ_ORDER = ["せどり", "AIポスター", "オリキャラ", "AI同人"];
+
+function b64urlToBytes(s) {
+  s = String(s || "").replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+  var bin = atob(s), out = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+function hex(buf) {
+  return Array.prototype.map.call(new Uint8Array(buf), function (b) { return (b < 16 ? "0" : "") + b.toString(16); }).join("");
+}
+
+// 届いたファイルの頭を読む＝{kind:"broken"} か {kind:"ok", keyId, header, nonce, ct}
+function parseBlob(u8) {
+  if (!u8 || u8.length < HEADER_LEN + NONCE_LEN + 16) return { kind: "broken" };
+  var magic = String.fromCharCode(u8[0], u8[1], u8[2]);
+  if (magic !== MAGIC) return { kind: "broken" };
+  var id = "";
+  for (var i = 3; i < HEADER_LEN; i++) id += String.fromCharCode(u8[i]);
+  return { kind: "ok", keyId: id, header: u8.slice(0, HEADER_LEN), nonce: u8.slice(HEADER_LEN, HEADER_LEN + NONCE_LEN),
+           ct: u8.slice(HEADER_LEN + NONCE_LEN) };
+}
+
+// 鍵（生の32バイト）→ 取り出せない形の鍵＋鍵の番号
+function importKey(raw) {
+  return Promise.all([
+    crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["decrypt"]),
+    crypto.subtle.digest("SHA-256", raw)
+  ]).then(function (r) { return { key: r[0], id: hex(r[1]).slice(0, KEY_ID_LEN) }; });
+}
+
+// 解く＝{kind:"ok", data} / {kind:"key_changed"} / {kind:"broken"} / {kind:"too_new"}
+function openBlob(u8, keyObj) {
+  var p = parseBlob(u8);
+  if (p.kind !== "ok") return Promise.resolve({ kind: "broken" });
+  if (p.keyId !== keyObj.id) return Promise.resolve({ kind: "key_changed" });
+  return crypto.subtle.decrypt({ name: "AES-GCM", iv: p.nonce, additionalData: p.header }, keyObj.key, p.ct)
+    .then(function (plain) {
+      var data = JSON.parse(new TextDecoder().decode(plain));
+      if (!data || typeof data.v !== "number") return { kind: "broken" };
+      if (data.v > PAGE_V) return { kind: "too_new", data: data };
+      return { kind: "ok", data: data };
+    }, function () { return { kind: "broken" }; });
+}
+
+function parseLocal(s) {           // "2026-11-22T15:02" → Date（日本の時刻のまま）
+  var m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(String(s || ""));
+  return m ? new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]) : null;
+}
+
+// 古い印＝直前の予定の時刻＋1時間を過ぎても、その時刻以降に確かめていない
+function staleness(checkedAt, schedule, now) {
+  var hours = (schedule || []).slice().sort(function (a, b) { return a - b; });
+  var checked = parseLocal(checkedAt);
+  if (!hours.length || !checked) return { old: !checked, slot: null };
+  var slot = null;
+  for (var back = 0; back < 3 && !slot; back++) {
+    var day = new Date(now.getFullYear(), now.getMonth(), now.getDate() - back);
+    for (var i = hours.length - 1; i >= 0; i--) {
+      var t = new Date(day.getFullYear(), day.getMonth(), day.getDate(), hours[i], 0);
+      if (t <= now) { slot = t; break; }
+    }
+  }
+  if (!slot) return { old: false, slot: null };
+  var grace = new Date(slot.getTime() + 60 * 60 * 1000);
+  var old = now >= grace && checked < slot;
+  return { old: old, slot: slot.getHours() };
+}
+
+function yen(n) {
+  if (n === null || n === undefined || isNaN(n)) return "—";
+  n = Math.round(n);
+  return (n < 0 ? "−" : "") + "¥" + Math.abs(n).toLocaleString("en-US");
+}
+function signedYen(n) {
+  if (n === null || n === undefined || isNaN(n)) return "—";
+  return (n > 0 ? "＋" : n < 0 ? "−" : "±") + "¥" + Math.abs(Math.round(n)).toLocaleString("en-US");
+}
+function pct(r) { return (r === null || r === undefined || isNaN(r)) ? "—" : r.toFixed(1) + "%"; }
+function rateOf(p, a) { return a > 0 ? Math.round(p / a * 1000) / 10 : null; }
+function md(ymd) { var s = String(ymd || ""); return s.length >= 10 ? (+s.slice(5, 7)) + "/" + (+s.slice(8, 10)) : s; }
+function monthName(ym) { return (+String(ym).slice(5, 7)) + "月"; }
+function dayLabel(ymd) {
+  var s = String(ymd || "");
+  if (s.length < 10) return s || "日付なし";
+  var d = new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10));
+  return md(s) + "（" + "日月火水木金土".charAt(d.getDay()) + "）";
+}
+
+// 比べの1行（今月＝取り込み済みの日まで／過去の月＝月全体）。差と率は前の値が0なら出さない
+function compareText(month) {
+  var c = month.compare || {}, amt = month.total.amount;
+  var parts = [];
+  if (c.kind === "same_day") parts.push(monthName(c.prev_ym) + "の" + c.day + "日まで " + yen(c.prev_amount) + diffText(amt, c.prev_amount));
+  else if (c.kind === "full" && c.prev_amount !== null && c.prev_amount !== undefined) parts.push(monthName(c.prev_ym) + " " + yen(c.prev_amount) + diffText(amt, c.prev_amount));
+  if (month.yoy && month.yoy.amount !== null && month.yoy.amount !== undefined) parts.push("前年の" + monthName(month.yoy.ym) + " " + yen(month.yoy.amount));
+  return parts.join("／");
+}
+function diffText(now, prev) {
+  if (prev === null || prev === undefined) return "";
+  var d = now - prev;
+  return " → " + signedYen(d) + (prev > 0 ? "（" + (d >= 0 ? "＋" : "−") + Math.round(Math.abs(d) / prev * 100) + "%）" : "");
+}
+
+function filterRows(rows, biz, ch) {
+  return (rows || []).filter(function (r) { return (!biz || r.b === biz) && (!ch || r.ch === ch); });
+}
+
+// 日ごとにまとめる（新しい日から）。個数・売上・利益は返品のマイナス込み
+function groupDays(rows) {
+  var map = {}, order = [];
+  rows.forEach(function (r) {
+    var d = String(r.d || "").slice(0, 10);
+    if (!map[d]) { map[d] = { d: d, units: 0, amount: 0, profit: 0, rows: [] }; order.push(d); }
+    var g = map[d]; g.units += r.u; g.amount += r.a; g.profit += r.p; g.rows.push(r);
+  });
+  order.sort(function (a, b) { return a < b ? 1 : a > b ? -1 : 0; });
+  return order.map(function (d) { return map[d]; });
+}
+
+// 事業のカード：決まった順・売上0の事業は畳む（売上がマイナスなら畳まない）
+function bizCards(groups) {
+  var by = {};
+  (groups || []).forEach(function (g) { by[g.key] = g; });
+  var keys = BIZ_ORDER.concat(Object.keys(by).filter(function (k) { return BIZ_ORDER.indexOf(k) < 0; }));
+  var shown = [], folded = [];
+  keys.forEach(function (k) {
+    var g = by[k];
+    if (g && (g.amount !== 0 || g.count > 0)) shown.push(g); else folded.push(k);
+  });
+  return { shown: shown, folded: folded };
+}
+// ===LOGIC-END===
+
+// ── ここから画面（試験は届かない） ─────────────────────────
+var DB_NAME = "sales_view", STORE = "kv";
+var state = { data: null, sel: 0, biz: "", ch: "", open: {}, more: false, tip: null, about: false,
+              banner: null, loading: false, stale: false };
+
+function idb() {
+  return new Promise(function (ok, ng) {
+    var r = indexedDB.open(DB_NAME, 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore(STORE); };
+    r.onsuccess = function () { ok(r.result); };
+    r.onerror = function () { ng(r.error); };
+  });
+}
+function idbGet(k) {
+  return idb().then(function (db) {
+    return new Promise(function (ok, ng) {
+      var q = db.transaction(STORE).objectStore(STORE).get(k);
+      q.onsuccess = function () { ok(q.result); }; q.onerror = function () { ng(q.error); };
+    });
+  });
+}
+function idbSet(k, v) {
+  return idb().then(function (db) {
+    return new Promise(function (ok, ng) {
+      var t = db.transaction(STORE, "readwrite"); t.objectStore(STORE).put(v, k);
+      t.oncomplete = function () { ok(); }; t.onerror = function () { ng(t.error); };
+    });
+  });
+}
+
+function esc(s) { return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+function chLabel(ch) { var L = (state.data && state.data.labels) || {}; return L[ch] || ch || "（販路なし）"; }
+function bizLabel(b) { return (BIZ_ICON[b] ? BIZ_ICON[b] + " " : "") + b; }
+
+function takeKeyFromHash() {
+  var m = /[#&]k=([A-Za-z0-9_-]+)/.exec(location.hash || "");
+  if (!m) return Promise.resolve(false);
+  history.replaceState(null, "", location.pathname + location.search);   // 🔴 読む前に住所から消す（壊れた QR でも残さない）
+  var raw;
+  try { raw = b64urlToBytes(m[1]); } catch (e) { raw = new Uint8Array(0); }
+  if (raw.length === 32) state.justKey = m[1];
+  if (raw.length !== 32) { state.banner = { cls: "ng", text: "QR の鍵が読めませんでした。もう一度読んでください" }; return Promise.resolve(false); }
+  return importKey(raw).then(function (k) { return idbSet("key", k); }).then(function () { return true; });
+}
+
+function standalone() {
+  return navigator.standalone === true || (window.matchMedia && matchMedia("(display-mode: standalone)").matches);
+}
+
+// アプリ（ホーム画面）で、Safari でコピーした鍵を貼る（貼れたらクリップボードを空にする）
+function pasteKey() {
+  if (!navigator.clipboard || !navigator.clipboard.readText) { state.banner = { cls: "ng", text: "この iPhone では貼れませんでした（iOS を新しくしてください）" }; renderNoKey(); return; }
+  navigator.clipboard.readText().then(function (t) {
+    var raw; try { raw = b64urlToBytes(String(t || "").trim()); } catch (e) { raw = new Uint8Array(0); }
+    if (raw.length !== 32) throw new Error("鍵ではない");
+    return importKey(raw).then(function (k) { return idbSet("key", k); }).then(function () {
+      if (navigator.clipboard.writeText) navigator.clipboard.writeText("").catch(function () {});
+      state.banner = null; start();
+    });
+  }).catch(function () { state.banner = { cls: "ng", text: "貼れませんでした。Safari で「鍵をコピー」を押してから、もう一度［鍵を貼る］を押してください" }; renderNoKey(); });
+}
+
+function start() {
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {});
+  takeKeyFromHash().catch(function (e) { state.banner = { cls: "ng", text: "鍵を預けられませんでした（" + ((e && e.message) || e) + "）" }; })
+    .then(function () { return idbGet("key"); }).then(function (k) {
+    if (!k) { renderNoKey(); return; }
+    state.key = k;
+    return idbGet("blob").then(function (b) {
+      var p = b ? openBlob(new Uint8Array(b), k).then(function (r) { if (r.kind === "ok") { state.data = r.data; state.stale = true; } }) : Promise.resolve();
+      return p.then(function () { render(); return refresh(); });
+    });
+  }).catch(function (e) { document.getElementById("app").innerHTML = '<div class="empty">開けませんでした（' + esc(e && e.message) + '）</div>'; });
+}
+
+function refresh() {
+  if (!state.key) return Promise.resolve();
+  state.fetchedAt = Date.now();
+  state.loading = true; render();
+  return fetch("data.bin?t=" + Date.now(), { cache: "no-store" }).then(function (res) {
+    if (res.status === 404) throw { why: "none" };
+    if (!res.ok) throw { why: "net" };
+    return res.arrayBuffer();
+  }).then(function (buf) {
+    return openBlob(new Uint8Array(buf), state.key).then(function (r) {
+      if (r.kind === "ok") { state.data = r.data; state.stale = false; state.banner = null; return idbSet("blob", buf); }
+      // 🔴 ホーム画面のアプリは QR（カメラ→Safari）で鍵が入れ替わらない＝貼るボタンを帯に出す（/recheck 区切り 2026-11-22）
+      if (r.kind === "key_changed") state.banner = standalone()
+        ? { cls: "ng", paste: true, text: "鍵が変わりました。パソコンで「鍵のQR.bat」を開き、iPhone のカメラで QR を読む（Safari で開きます）→［📋 鍵をコピー］→ このアプリに戻って下の［📋 鍵を貼る］" }
+        : { cls: "ng", text: "鍵が変わりました。パソコンで「鍵のQR.bat」を開いて、QR を読み直してください" };
+      else if (r.kind === "too_new") state.banner = { cls: "old", text: "ページを新しくしてください（ホーム画面のアプリを閉じて開き直す）" };
+      else state.banner = { cls: "old", text: "届いた数字が壊れていました" + (state.data ? "（前回の数字を表示）" : "") + "。次に送られた分で直ります" };
+    });
+  }).catch(function (e) {
+    if (e && e.why === "none") state.banner = { cls: "old", text: (state.data ? "置き場に数字がありません（前回の数字を表示）。" : "まだ数字が届いていません。") + "パソコンの sales_manager で「📤 書き出し ▾」→「📱 スマホへ送る」を押してください" };
+    else state.banner = { cls: "old", text: "読めませんでした（電波？）" + (state.data ? "前回 " + md(state.data.checked_at) + " " + String(state.data.checked_at).slice(11, 16) + " の数字です" : "") };
+  }).then(function () { state.loading = false; render(); });
+}
+
+function renderNoKey() {
+  var h = '<div class="empty"><h3>📱 売上</h3>';
+  if (standalone()) {
+    h += '<p>鍵を入れてください（1回だけ）</p><ol><li>パソコンで <b>sales_view の「鍵のQR.bat」</b>を開く</li>' +
+      '<li>iPhone のカメラで QR を読む（Safari で開きます）→ <b>［📋 鍵をコピー］</b></li><li>このアプリに戻って下の<b>［📋 鍵を貼る］</b></li></ol>' +
+      '<button class="more" id="paste">📋 鍵を貼る</button>';
+  } else {
+    h += '<p>初めての準備（1回だけ）</p><ol><li>パソコンで <b>sales_view の「鍵のQR.bat」</b>を開く</li>' +
+      '<li>iPhone のカメラで QR を読む</li><li>出てきた［📋 鍵をコピー］を押す → 共有ボタン →「ホーム画面に追加」</li>' +
+      '<li>ホーム画面の「売上」を開いて［📋 鍵を貼る］（以後は開くだけ）</li></ol>';
+  }
+  h += '<p class="small">前に使っていたのにこの画面が出たら、しばらく開かなかったため鍵が消えています。もう一度鍵を入れてください。</p>' +
+    (state.banner ? '<p class="loss">' + esc(state.banner.text) + '</p>' : "") + '</div>';
+  document.getElementById("app").innerHTML = h;
+  var b = document.getElementById("paste"); if (b) b.onclick = pasteKey;
+}
+
+// Safari で QR から開いた直後＝アプリへ鍵を渡す案内（コピーのボタン）
+function handoverHtml() {
+  if (!state.justKey || standalone()) return "";
+  return '<div class="card"><h4>🔑 鍵を受け取りました</h4><div class="small">ホーム画面のアプリで見るには：' +
+    '① <b>［📋 鍵をコピー］</b> ② 共有ボタン →「ホーム画面に追加」 ③ アプリを開いて［📋 鍵を貼る］（貼るとコピーは消えます）</div>' +
+    '<button class="more" id="copykey">📋 鍵をコピー</button></div>';
+}
+
+function render() {
+  var app = document.getElementById("app"), d = state.data;
+  var h = '<div class="top"><span class="ttl">📱 売上</span>' +
+    '<a class="ib" href="../shiire-calc/" aria-label="計算機">🧮</a><a class="ib" href="../shukkinbo/" aria-label="出勤簿">📋</a>' +
+    '<button class="ib" id="reload" aria-label="読み直す">🔄</button></div>';
+  if (!d) {
+    h += handoverHtml() + freshHtml(null) + '<div class="empty">' + (state.loading ? "読み込み中…" : "数字がまだありません") + '</div>';
+    app.innerHTML = h; bind(); return;
+  }
+  h += handoverHtml() + freshHtml(d);
+  var months = d.months || [];
+  if (state.sel >= months.length) state.sel = 0;
+  var m = months[state.sel];
+  h += '<div class="months" id="months">' + months.slice().reverse().map(function (x) {
+    var i = months.indexOf(x);
+    return '<button data-m="' + i + '" class="' + (i === state.sel ? "on" : "") + '">' + esc((x.ym.slice(5, 7) === "01" || i === months.length - 1 ? x.ym.slice(2, 4) + "年" : "") + monthName(x.ym)) + '</button>';
+  }).join("") + '</div>';
+  h += '<div class="' + (state.stale ? "dim" : "") + '">';
+  h += salesHtml(m, state.sel === 0) + moneyHtml(d) + flowHtml(d, m) + soldHtml(m);
+  h += '</div><button class="about" id="about">? このページについて</button>' + (state.about ? aboutHtml(d) : "");
+  app.innerHTML = h; bind();
+  var bar = document.getElementById("months"); if (bar) bar.scrollLeft = bar.scrollWidth;
+}
+
+function freshHtml(d) {
+  if (state.banner) return '<div class="fresh ' + state.banner.cls + '">' + esc(state.banner.text) + (state.loading ? "（読み込み中…）" : "") +
+    (state.banner.paste ? '<br><button class="more" id="paste2">📋 鍵を貼る</button>' : "") + '</div>';
+  if (!d) return state.loading ? '<div class="fresh">読み込み中…</div>' : "";
+  var s = staleness(d.checked_at, d.schedule, new Date());
+  var t = String(d.checked_at).slice(11, 16), imp = d.sales_imported ? md(d.sales_imported) : "まだ無し";
+  if (s.old) return '<div class="fresh old">⚠ ' + s.slot + '時の分が届いていません（パソコンが眠っている？）＝' + md(d.checked_at) + " " + t + ' の数字・売上の取り込みは ' + imp + ' まで</div>';
+  return '<div class="fresh">✅ <b>' + (isToday(d.checked_at) ? "" : md(d.checked_at) + " ") + t + ' に確かめた</b>（売上の取り込みは ' + imp + ' まで）' + (state.loading ? "・読み込み中…" : "") + '</div>';
+}
+function isToday(s) { var x = parseLocal(s), n = new Date(); return x && x.toDateString() === n.toDateString(); }
+
+function salesHtml(m, isNow) {
+  var t = m.total, loss = t.profit < 0;
+  var label = monthName(m.ym) + "の売上" + (isNow && m.compare && m.compare.kind === "same_day" ? "（取り込み済みの " + m.compare.day + "日まで）" : "");
+  var h = '<div class="grp"><span>売上の話（' + monthName(m.ym) + '）</span><span>月で変わる</span></div>';
+  h += '<div class="hero' + (loss ? " loss" : "") + '"><div class="lab">' + esc(label) + '</div><div class="big">' + yen(t.amount) + '</div>' +
+    '<div class="big2">利益 ' + yen(t.profit) + '<small>利益率 ' + pct(t.rate) + '</small></div>' +
+    '<div class="pills"><span>販売 ' + t.units + ' 個</span><span>経費 ' + yen(m.expense) + '</span><span>経費を引いた利益 ' + yen(m.net) + '</span></div>' +
+    (t.amount === 0 && t.count === 0 ? '<div class="cmp">この月はまだ売れていません</div>' : "") +
+    (compareText(m) ? '<div class="cmp">' + esc(compareText(m)) + '</div>' : "") + '</div>';
+  var bc = bizCards(m.by_business), sb = (state.data.now || {}).stock_by_business || {};
+  if (bc.shown.length) {
+    h += '<div class="grid2">' + bc.shown.map(function (g) {
+      return '<div class="biz"><span class="tag">' + esc(bizLabel(g.key)) + '</span>' +
+        kv("売上", "<b>" + yen(g.amount) + "</b>") + kv("利益", '<b class="' + (g.profit < 0 ? "loss" : "gain") + '">' + yen(g.profit) + "</b>") +
+        kv("利益率", pct(g.rate)) + kv("販売", g.units + " 個") +
+        '<div class="kv muted"><span>在庫<span class="now">今</span></span><span>' + (sb[g.key] !== undefined ? sb[g.key] + " 個" : "—") + '</span></div></div>';
+    }).join("") + '</div>';
+  }
+  if (bc.folded.length) h += '<div class="fold">▸ ' + esc(bc.folded.join("・")) + '（この月の売上なし）</div>';
+  var chs = (m.by_channel || []).slice().sort(function (a, b) { return b.amount - a.amount; });
+  if (chs.length) {
+    h += '<div class="card"><h4>🛒 販路ごと</h4>' + chs.map(function (g) {
+      return kv(esc(chLabel(g.key)) + " " + g.units + "個", yen(g.amount) + ' ／ <span class="' + (g.profit < 0 ? "loss" : "gain") + '">' + yen(g.profit) + "</span> " + pct(g.rate));
+    }).join("") + '</div>';
+  }
+  return h;
+}
+function kv(a, b) { return '<div class="kv"><span>' + a + '</span><span>' + b + '</span></div>'; }
+
+function moneyHtml(d) {
+  var n = d.now || {}, av = n.available || {}, tx = n.tax || {}, st = n.stock || {}, pl = n.planned || {};
+  var h = '<div class="grp"><span>お金と在庫の話</span><span>月を変えても変わらない</span></div><div class="card"><h4>💰 お金</h4>';
+  if (av.none) h += kv('今月、仕入れに使える額<span class="now">今</span>', '<span class="muted">—</span>') + '<div class="small muted">' + esc(av.none) + '</div>';
+  else if (av.old) h += kv('今月、仕入れに使える額<span class="now">今</span>', '<span class="muted">—</span>') + '<div class="small muted">資産管理の数字が古いので出していません（' + esc(md(av.as_of)) + '）＝資産管理を開くと新しくなります</div>';
+  else h += kv('今月、仕入れに使える額<span class="now">今</span>', "<b>" + yen(av.value) + "</b>") + '<div class="small muted" style="text-align:right">資産管理 ' + esc(md(av.as_of) + " " + String(av.as_of || "").slice(11, 16)) + ' の数字' + (av.problems ? "・読めない元 " + av.problems + " 件" : "") + '</div>' +
+      (av.stale_old || av.stale_missing ? '<div class="small loss">⚠ ' + [av.stale_old ? "古い口座 " + av.stale_old : "", av.stale_missing ? "未入力の口座 " + av.stale_missing : ""].filter(Boolean).join("・") + '＝この額は実際と違うかもしれません</div>' : "");
+  h += tx.none ? kv("税金の取り置き", '<span class="muted">—</span>') + '<div class="small muted">' + esc(tx.none) + '</div>'
+               : kv('税金の取り置き<span class="yr">' + esc(tx.year) + '年</span>', yen(tx.reserve));
+  h += '</div><div class="card"><h4>📦 在庫<span class="now">今</span></h4>' +
+    kv("在庫 " + (st.units || 0) + " 個（" + (st.items || 0) + " 件）", "仕入れ値の合計 " + yen(st.cost)) +
+    kv("売値の合計（手数料を引く前）", "<b>" + yen(pl.gross) + "</b>") +
+    '<div class="small muted">売値の合計は予定売価が入っている ' + (pl.priced || 0) + ' 件ぶん' + (pl.blank ? "（空の " + pl.blank + " 件は入っていない）" : "") + '</div></div>';
+  return h;
+}
+
+function flowHtml(d, m) {
+  var tr = d.trend || [], max = 1;
+  tr.forEach(function (t) { max = Math.max(max, t.amount, t.profit); });
+  var sel = m.ym, tip = state.tip || sel, tt = tr.filter(function (t) { return t.ym === tip; })[0];
+  var h = '<div class="grp"><span>流れと1件ずつ</span><span></span></div><div class="card"><h4>📈 売上（棒）と利益（点）</h4>';
+  if (tt) h += '<div class="tip">' + esc(monthName(tt.ym)) + ' 売上 ' + yen(tt.amount) + ' ／ 利益 ' + yen(tt.profit) + '</div>';
+  h += '<div class="bars">' + tr.map(function (t) {
+    var hp = Math.max(0, t.amount) / max * 100, pp = Math.max(0, Math.min(100, Math.abs(t.profit) / max * 100));
+    return '<button data-ym="' + t.ym + '" class="' + (t.ym === sel ? "on" : "") + '" aria-label="' + monthName(t.ym) + '"><em style="height:' + hp + '%"></em><b class="' + (t.profit < 0 ? "neg" : "") + '" style="bottom:calc(' + pp + '% - 3px)"></b></button>';
+  }).join("") + '</div><div class="mlab">' + tr.map(function (t, i) { return "<span>" + (i % 2 === 0 ? +t.ym.slice(5, 7) : "") + "</span>"; }).join("") + '</div>' +
+    '<div class="small muted">棒を押すと金額が出て、その月に切り替わります</div></div>';
+  return h;
+}
+
+function soldHtml(m) {
+  var rows = filterRows(m.rows, state.biz, state.ch);
+  var bizs = {}, chs = {};
+  (m.rows || []).forEach(function (r) { bizs[r.b] = 1; chs[r.ch] = 1; });
+  var h = '<div class="card"><h4>🎉 売れた物（' + monthName(m.ym) + '・' + m.total.units + ' 個）</h4>';
+  h += '<div class="sel2"><select id="fb"><option value="">事業：すべて</option>' + Object.keys(bizs).map(function (b) { return '<option value="' + esc(b) + '"' + (b === state.biz ? " selected" : "") + '>' + esc(b) + '</option>'; }).join("") + '</select>' +
+    '<select id="fc"><option value="">販路：すべて</option>' + Object.keys(chs).map(function (c) { return '<option value="' + esc(c) + '"' + (c === state.ch ? " selected" : "") + '>' + esc(chLabel(c)) + '</option>'; }).join("") + '</select></div>';
+  var days = groupDays(rows);
+  if (!days.length) return h + '<div class="small muted">' + ((m.rows || []).length ? "この条件で売れた物はありません" : "この月に売れた物はありません") + '</div></div>';
+  var limit = state.more ? days.length : Math.min(days.length, 4);
+  days.slice(0, limit).forEach(function (g, i) {
+    var open = state.open[g.d] !== undefined ? state.open[g.d] : i < 2;
+    h += '<button class="day" data-day="' + esc(g.d) + '"><span>' + (open ? "▾ " : "▸ ") + esc(dayLabel(g.d)) + " " + g.units + ' 個</span><span>' + yen(g.amount) + ' <span class="' + (g.profit < 0 ? "loss" : "gain") + '">' + signedYen(g.profit) + '</span></span></button>';
+    if (open) g.rows.forEach(function (r) {
+      var title = (r.r ? "↩ 返品 " : "") + (r.t || "（商品名なし）");
+      var inner = '<span class="ch">' + esc(chLabel(r.ch)) + '</span><span class="t">' + (r.asin && !r.r ? '<span class="lnk">' + esc(title) + '</span>' : esc(title)) + '</span>' +
+        '<span class="a">' + yen(r.a) + '<small class="' + (r.p < 0 ? "loss" : "gain") + '">' + signedYen(r.p) + '</small></span>';
+      h += r.asin && !r.r ? '<a class="row" href="https://www.amazon.co.jp/dp/' + encodeURIComponent(r.asin) + '" target="_blank" rel="noopener">' + inner + '</a>'
+                          : '<div class="row' + (r.r ? " ret" : "") + '">' + inner + '</div>';
+    });
+  });
+  if (days.length > limit) {
+    var rest = days.slice(limit), units = rest.reduce(function (s, g) { return s + g.units; }, 0);
+    h += '<button class="more" id="more">▸ ' + esc(md(rest[rest.length - 1].d)) + '〜' + esc(md(rest[0].d)) + ' をもっと見る（' + units + ' 個）</button>';
+  }
+  return h + '</div>';
+}
+
+function aboutHtml(d) {
+  return '<div class="card aboutbox"><p><b>数字の元</b>＝パソコンの sales_manager の台帳。売上を取り込んだ分までが出ます（上の帯の「取り込みは◯まで」）。</p>' +
+    '<p><b>利益</b>＝売上から仕入れ値・手数料・送料を引いた額（経費は引く前）。<b>経費を引いた利益</b>＝そこから経費を引いた額（税金はまだ引いていない）。</p>' +
+    '<p><b>届く時刻</b>＝' + esc((d.schedule || []).join("・")) + '時（パソコンが起きていて、予約を入れたとき）と、sales_manager の「📤 書き出し ▾」→「📱 スマホへ送る」を押したとき。届いていないと上の帯が琥珀色になります。</p>' +
+    '<p><b>鍵</b>＝iPhone をなくした・鍵が漏れたかもしれないときは、パソコンの「鍵のQR.bat」で［🔁 鍵を作り直す］。前の鍵では読めなくなります（ホーム画面のアプリは、上に出る［📋 鍵を貼る］で新しい鍵を入れ直します）。</p></div>';
+}
+
+function bind() {
+  var q = function (id) { return document.getElementById(id); };
+  if (q("reload")) q("reload").onclick = function () { refresh(); };
+  if (q("paste2")) q("paste2").onclick = pasteKey;
+  if (q("copykey")) q("copykey").onclick = function () {
+    var done = function (ok) { q("copykey").textContent = ok ? "✅ コピーしました（アプリで貼ってください）" : "コピーできませんでした"; };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(state.justKey).then(function () { done(true); }, function () { done(false); });
+    else done(false);
+  };
+  if (q("about")) q("about").onclick = function () { state.about = !state.about; render(); };
+  if (q("more")) q("more").onclick = function () { state.more = true; render(); };
+  if (q("fb")) q("fb").onchange = function (e) { state.biz = e.target.value; render(); };
+  if (q("fc")) q("fc").onchange = function (e) { state.ch = e.target.value; render(); };
+  Array.prototype.forEach.call(document.querySelectorAll("[data-m]"), function (b) {
+    b.onclick = function () { state.sel = +b.getAttribute("data-m"); state.tip = null; state.open = {}; state.more = false; state.biz = ""; state.ch = ""; render(); };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-ym]"), function (b) {
+    b.onclick = function () {
+      var ym = b.getAttribute("data-ym"), i = (state.data.months || []).map(function (x) { return x.ym; }).indexOf(ym);
+      state.tip = ym; if (i >= 0 && i !== state.sel) { state.sel = i; state.open = {}; state.more = false; state.biz = ""; state.ch = ""; } render();
+    };
+  });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-day]"), function (b) {
+    b.onclick = function () { var k = b.getAttribute("data-day"), cur = b.textContent.indexOf("▾") === 0; state.open[k] = !cur; render(); };
+  });
+}
+
+// iPhone はアプリを裏に置いたまま後で前に戻す＝戻ったら読み直す（古い印も描き直す）
+function onBack() { if (document.visibilityState !== "hidden" && state.key && !state.loading && (!state.fetchedAt || Date.now() - state.fetchedAt > 60000)) refresh(); else if (state.data) render(); }
+document.addEventListener("visibilitychange", onBack);
+window.addEventListener("pageshow", function (e) { if (e.persisted) onBack(); });
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(function () {});
+start();
+</script>
+</body>
+</html>
